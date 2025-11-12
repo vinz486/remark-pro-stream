@@ -84,6 +84,19 @@ canvas.hidden {
     display: none;
 }
 
+#menu-handle {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 6;
+    cursor: pointer;
+    padding: 10px;
+    background-color: var(--sidebar-bg);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    color: var(--text-color);
+}
+
 .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
@@ -94,7 +107,7 @@ canvas.hidden {
     box-shadow: 2px 0 15px var(--shadow-color);
     position: fixed;
     top: 0;
-    left: calc(-1 * (var(--sidebar-width) - var(--sidebar-collapsed-width)));
+    left: calc(-1 * var(--sidebar-width));
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 5;
     padding-top: 0;
@@ -137,7 +150,6 @@ canvas.hidden {
 
 .menu li:hover {
     background-color: var(--menu-hover);
-    transform: translateY(-1px);
 }
 
 .menu li button {

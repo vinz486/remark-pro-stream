@@ -103,13 +103,22 @@ document.getElementById('colors').addEventListener('click', function () {
     showMessage(`${withColor ? 'Color' : 'Grayscale'} mode enabled`, 2000);
 });
 
-// Sidebar hover effect
+// Sidebar toggle functionality
 const sidebar = document.querySelector('.sidebar');
-sidebar.addEventListener('mouseover', function () {
-    sidebar.classList.add('active');
+const menuHandle = document.getElementById('menu-handle');
+
+menuHandle.addEventListener('click', function (event) {
+    event.stopPropagation();
+    sidebar.classList.toggle('active');
 });
-sidebar.addEventListener('mouseout', function () {
-    sidebar.classList.remove('active');
+
+document.addEventListener('click', function (event) {
+    const isClickInsideSidebar = sidebar.contains(event.target);
+    const isClickOnHandle = menuHandle.contains(event.target);
+
+    if (!isClickInsideSidebar && !isClickOnHandle) {
+        sidebar.classList.remove('active');
+    }
 });
 
 // Resize the canvas whenever the window is resized
