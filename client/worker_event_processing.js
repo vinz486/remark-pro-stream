@@ -37,43 +37,44 @@ async function initiateEventsListener() {
 	const eventSource = new EventSource(eventURL);
 	draw = true;
 	eventSource.onmessage = (event) => {
-		const message = JSON.parse(event.data);
-		if (message.Type === 3) {
-			if (message.Code === 24) {
-				draw = false;	
-				postMessage({ type: 'clear' });
-				//						clearLaser();
-			} else if (message.Code === 25) {
-				draw = true;	
+		const parts = event.data.split(',');
+		const code = parseInt(parts[0], 10);
+		const value = parseInt(parts[1], 10);
 
+		// The original logic only cared about Type === 3, which we are now assuming
+		// as the server filters for it.
+
+		if (code === 24) {
+			draw = false;
+			postMessage({ type: 'clear' });
+		} else if (code === 25) {
+			draw = true;
+		}
+
+		// Update and draw laser pointer
+		// Send RAW coordinates to main thread - scaling will happen there with correct canvas dimensions
+		if (portrait) {
+			if (code === 1) { // Horizontal position
+				latestX = value;
+			} else if (code === 0) { // Vertical position
+				latestY = value;
+			}
+		} else {
+			// Landscape mode
+			if (code === 1) { // Horizontal position
+				latestX = value;
+			} else if (code === 0) { // Vertical position
+				latestY = value;
 			}
 		}
-		if (message.Type === 3) {
-			// Code 3: Update and draw laser pointer
-			// Send RAW coordinates to main thread - scaling will happen there with correct canvas dimensions
-			if (portrait) {
-				if (message.Code === 1) { // Horizontal position
-					latestX = message.Value;
-				} else if (message.Code === 0) { // Vertical position
-					latestY = message.Value;
-				}
-			} else {
-				// Landscape mode
-				if (message.Code === 1) { // Horizontal position
-					latestX = message.Value;
-				} else if (message.Code === 0) { // Vertical position
-					latestY = message.Value;
-				}
-			}
-			if (draw) {
-				postMessage({ 
-					type: 'update', 
-					rawX: latestX, 
-					rawY: latestY,
-					maxX: maxXValue,
-					maxY: maxYValue
-				});
-			}
+		if (draw) {
+			postMessage({
+				type: 'update',
+				rawX: latestX,
+				rawY: latestY,
+				maxX: maxXValue,
+				maxY: maxYValue
+			});
 		}
 	}
 

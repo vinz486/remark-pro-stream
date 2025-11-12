@@ -1,7 +1,6 @@
 package eventhttphandler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -44,13 +43,8 @@ func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if event.Type != events.EvAbs {
 				continue
 			}
-			jsonMessage, err := json.Marshal(event)
-			if err != nil {
-				http.Error(w, "cannot send json encode the message "+err.Error(), http.StatusInternalServerError)
-				return
-			}
 			// Send the event
-			fmt.Fprintf(w, "data: %s\n\n", jsonMessage)
+			fmt.Fprintf(w, "data: %d,%d\n\n", event.Code, event.Value)
 			w.(http.Flusher).Flush() // Ensure client receives the message immediately
 
 		}
