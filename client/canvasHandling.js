@@ -16,19 +16,8 @@ function resizeVisibleCanvas() {
 
 	var containerWidth = container.offsetWidth;
 	var containerHeight = container.offsetHeight;
-	var containerAspectRatio = containerWidth / containerHeight;
 
-	console.log(`
-		[CANVAS_RESIZE_DEBUG]
-		- Orientation: ${portrait ? 'Portrait' : 'Landscape'}
-		- Remarkable screenWidth: ${screenWidth}
-		- Remarkable screenHeight: ${screenHeight}
-		- Calculated Canvas Aspect Ratio: ${aspectRatio}
-		- Container Width: ${containerWidth}
-		- Container Height: ${containerHeight}
-		- Container Aspect Ratio: ${containerAspectRatio}
-		- Condition (containerAR > canvasAR): ${containerAspectRatio > aspectRatio}
-	`);
+	var containerAspectRatio = containerWidth / containerHeight;
 
 	if (containerAspectRatio > aspectRatio) {
 		        // Canvas is relatively wider than container

@@ -398,6 +398,12 @@ function updateLaserPosition(rawX, rawY, maxX, maxY) {
     }
     
     
+    // Apply flip transformation if active (180° rotation)
+    if (flip) {
+        newX = gl.canvas.width - newX;
+        newY = gl.canvas.height - newY;
+    }
+    
     // Get canvas position on page (no offset - CSS transform handles centering)
     const canvasRect = canvas.getBoundingClientRect();
     const absoluteX = canvasRect.left + newX;
