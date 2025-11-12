@@ -2,15 +2,33 @@
 function resizeVisibleCanvas() {
 	var container = document.getElementById("container");
 
-	// Always use landscape aspect ratio for this device
-	var aspectRatio = screenHeight / screenWidth;
-
-	console.log(`[RESIZE] portrait=${portrait}, screenW=${screenWidth}, screenH=${screenHeight}, aspectRatio=${aspectRatio}`);
+	// Calculate aspect ratio based on orientation
+	var aspectRatio;
+	if (portrait) {
+		// Portrait mode: canvas is TALL. The reMarkable's height becomes the canvas's width.
+		// Aspect ratio (width/height) should be < 1.
+		aspectRatio = screenHeight / screenWidth;
+	} else {
+		// Landscape mode: canvas is WIDE.
+		// Aspect ratio (width/height) should be > 1.
+		aspectRatio = screenWidth / screenHeight;
+	}
 
 	var containerWidth = container.offsetWidth;
 	var containerHeight = container.offsetHeight;
-
 	var containerAspectRatio = containerWidth / containerHeight;
+
+	console.log(`
+		[CANVAS_RESIZE_DEBUG]
+		- Orientation: ${portrait ? 'Portrait' : 'Landscape'}
+		- Remarkable screenWidth: ${screenWidth}
+		- Remarkable screenHeight: ${screenHeight}
+		- Calculated Canvas Aspect Ratio: ${aspectRatio}
+		- Container Width: ${containerWidth}
+		- Container Height: ${containerHeight}
+		- Container Aspect Ratio: ${containerAspectRatio}
+		- Condition (containerAR > canvasAR): ${containerAspectRatio > aspectRatio}
+	`);
 
 	if (containerAspectRatio > aspectRatio) {
 		        // Canvas is relatively wider than container

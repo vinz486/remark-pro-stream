@@ -70,8 +70,6 @@ body, html {
 
 #canvas {
     position: absolute;
-    width: 100vw;   /* 100% of the viewport width */
-    height: 100vh;  /* 100% of the viewport height */
     display: block; /* Remove extra space around the canvas */
     z-index: 2;
     transition: filter 0.3s ease;
