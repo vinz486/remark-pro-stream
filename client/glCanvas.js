@@ -388,13 +388,13 @@ function updateLaserPosition(rawX, rawY, maxX, maxY) {
         // Portrait mode - vertical orientation
         newX = (rawX / maxY) * gl.canvas.width;
         newY = (rawY / maxX) * gl.canvas.height;
-        // Don't invert Y in portrait mode initially
+        // Invert Y to match canvas coordinate system
+        newY = gl.canvas.height - newY;
     } else {
         // Landscape mode - horizontal orientation
         newX = (rawY / maxX) * gl.canvas.width;
         newY = (rawX / maxY) * gl.canvas.height;
-        // Invert Y to match canvas coordinate system in landscape
-        newY = gl.canvas.height - newY;
+        // Y-axis is correct in this orientation, no inversion needed
     }
     
     
