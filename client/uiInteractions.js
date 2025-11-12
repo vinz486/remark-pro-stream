@@ -124,6 +124,19 @@ document.addEventListener('click', function (event) {
 // Resize the canvas whenever the window is resized
 window.addEventListener("resize", resizeVisibleCanvas);
 
+// Fullscreen button functionality
+document.getElementById('fullscreen').addEventListener('click', function () {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        this.classList.add('toggled');
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+            this.classList.remove('toggled');
+        }
+    }
+});
+
 // Mask drawing button functionality
 document.getElementById('switchOrderButton').addEventListener('click', function () {
     // Swap z-index values
