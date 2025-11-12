@@ -40,6 +40,8 @@ uniform float uLaserX;
 uniform float uLaserY;
 uniform bool uDarkMode;
 uniform float uContrastLevel;
+uniform int uScreenWidth;
+uniform int uScreenHeight;
 
 // Constants for laser pointer visualization
 const float LASER_RADIUS = 3.0;
@@ -56,7 +58,7 @@ vec4 getBaseTexture(sampler2D sampler, vec2 texCoord) {
     float FXAA_REDUCE_MUL = 1.0/8.0;
     float FXAA_REDUCE_MIN = 1.0/128.0;
 
-    vec2 rcpFrame = vec2(1.0/1404.0, 1.0/1872.0); // remarkable resolution
+    vec2 rcpFrame = vec2(1.0/float(uScreenWidth), 1.0/float(uScreenHeight));
 
     vec3 rgbNW = texture2D(sampler, texCoord + vec2(-1.0,-1.0)*rcpFrame).xyz;
     vec3 rgbNE = texture2D(sampler, texCoord + vec2(1.0,-1.0)*rcpFrame).xyz;
@@ -193,6 +195,8 @@ const programInfo = {
         uLaserY: gl.getUniformLocation(shaderProgram, 'uLaserY'),
         uDarkMode: gl.getUniformLocation(shaderProgram, 'uDarkMode'),
         uContrastLevel: gl.getUniformLocation(shaderProgram, 'uContrastLevel'),
+        uScreenWidth: gl.getUniformLocation(shaderProgram, 'uScreenWidth'),
+        uScreenHeight: gl.getUniformLocation(shaderProgram, 'uScreenHeight'),
 	},
 };
 
@@ -315,6 +319,8 @@ function drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture)
     // Set display flags
     gl.uniform1i(programInfo.uniformLocations.uDarkMode, isDarkMode ? 1 : 0);
     gl.uniform1f(programInfo.uniformLocations.uContrastLevel, contrastValue);
+    gl.uniform1i(programInfo.uniformLocations.uScreenWidth, screenWidth);
+    gl.uniform1i(programInfo.uniformLocations.uScreenHeight, screenHeight);
 
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }

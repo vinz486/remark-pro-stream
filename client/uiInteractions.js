@@ -43,10 +43,15 @@ document.addEventListener('DOMContentLoaded', function() {
         flipButton.classList.add('toggled');
     }
     
-    // Initialize landscape button as toggled (landscape is on by default)
-    const landscapeButton = document.getElementById('rotate');
-    if (!portrait && !landscapeButton.classList.contains('toggled')) {
-        landscapeButton.classList.add('toggled');
+    // Initialize rotate button state and text
+    const rotateButton = document.getElementById('rotate');
+    const rotateButtonText = rotateButton.querySelector('span');
+    if (portrait) {
+        rotateButton.classList.remove('toggled');
+        rotateButtonText.textContent = 'Landscape';
+    } else {
+        rotateButton.classList.add('toggled');
+        rotateButtonText.textContent = 'Portrait';
     }
     
     // Force initial canvas resize with correct orientation
@@ -60,6 +65,10 @@ document.getElementById('checkbox').addEventListener('change', toggleDarkMode);
 document.getElementById('rotate').addEventListener('click', function () {
     portrait = !portrait;
     this.classList.toggle('toggled');
+
+    // Update button text to reflect the new state
+    const buttonText = this.querySelector('span');
+    buttonText.textContent = portrait ? 'Landscape' : 'Portrait';
     
     // Notify the event worker about orientation change
     eventWorker.postMessage({ type: 'portrait', portrait: portrait });
@@ -71,7 +80,7 @@ document.getElementById('rotate').addEventListener('click', function () {
     }
     
     // Show confirmation message
-    showMessage(`Portrait ${portrait ? 'ON' : 'OFF'}`, 2000);
+    showMessage(`Switched to ${portrait ? 'Portrait' : 'Landscape'} mode`, 2000);
 });
 
 // Flip button functionality - toggle 180° rotation independently
