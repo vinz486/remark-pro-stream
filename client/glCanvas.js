@@ -478,7 +478,7 @@ function updateLaserPosition(rawX, rawY, maxX, maxY) {
         console.log(`[LASER] Auto-hiding cursor after 1s of inactivity`);
         laserCursor.classList.remove('visible');
         cursorVisible = false;
-    }, 1000);
+    }, 250);
 }
 
 // Function to update dark mode state with transition effect

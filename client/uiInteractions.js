@@ -88,7 +88,7 @@ document.getElementById('rotate').addEventListener('click', function () {
     }
     
     // Show confirmation message
-    showMessage(`Switched to ${portrait ? 'Portrait' : 'Landscape'} mode`, 2000);
+    showMessage(`Switched to ${portrait ? 'Landscape' : 'Portrait'} mode`, 2000);
 });
 
 // Flip button functionality - toggle 180° rotation independently

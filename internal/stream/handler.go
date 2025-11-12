@@ -47,8 +47,6 @@ type StreamHandler struct {
 
 // ServeHTTP implements http.Handler
 func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[PERF] Stream connection established at %v", time.Now())
-	
 	// Parse query parameters
 	query := r.URL.Query()
 	rateStr := query.Get("rate")
@@ -94,9 +92,6 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer stopWriting.Stop()
 
 	var once sync.Once
-	sessionStart := time.Now()
-
-	log.Printf("[PERF] Starting with writing=false, waiting for first touch event")
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Connection", "close")
@@ -114,7 +109,6 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case event := <-eventC:
 			if event.Code == 24 || event.Source == events.Touch {
 				if !writing {
-					log.Printf("[PERF] First touch event received at T+%v - STARTING stream", time.Since(sessionStart))
 					writing = true
 					h.appState.SetStreaming(true)
 				}
@@ -129,19 +123,15 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				case <-isSending: // try to acquire the lock
 					go func() {
 						defer func() { isSending <- true }() // release the lock
-						tickStart := time.Now()
 						if h.useRLE {
 							h.fetchAndSend(rleWriter, rawData)
 						} else {
 							h.fetchAndSend(w, rawData)
 						}
-						once.Do(func() {
-							log.Printf("[PERF] First frame sent at T+%v (fetch+send took %v)", time.Since(sessionStart), time.Since(tickStart))
-						})
+						once.Do(func() {})
 					}()
 				default:
 					// previous send is still running, skip this frame
-					log.Println("[PERF] Skipping frame, previous one still sending.")
 				}
 			}
 		}
@@ -151,16 +141,12 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var frameCount int
 
 func (h *StreamHandler) fetchAndSend(w io.Writer, rawData []uint8) {
-	readStart := time.Now()
 	_, err := h.file.ReadAt(rawData, h.pointerAddr)
-	readDuration := time.Since(readStart)
-	
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	
-	writeStart := time.Now()
 	_, err = w.Write(rawData)
 	if err != nil {
 		log.Println("Error in writing", err)
@@ -169,12 +155,10 @@ func (h *StreamHandler) fetchAndSend(w io.Writer, rawData []uint8) {
 	if w, ok := w.(http.Flusher); ok {
 		w.Flush()
 	}
-	writeDuration := time.Since(writeStart)
 	
 	// Log only occasionally to avoid spam (every 100 frames)
 	frameCount++
 	if frameCount%100 == 1 {
-		log.Printf("[PERF] Frame fetch: %v, write+flush: %v, total: %v", readDuration, writeDuration, readDuration+writeDuration)
 	}
 }
 
