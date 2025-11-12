@@ -2,23 +2,25 @@ package eventhttphandler
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/owulveryck/goMarkableStream/internal/events"
 	"github.com/owulveryck/goMarkableStream/internal/pubsub"
+	"github.com/owulveryck/goMarkableStream/internal/state"
 )
 
 // NewEventHandler creates an event habdler that subscribes from the inputEvents
-func NewEventHandler(inputEvents *pubsub.PubSub) *EventHandler {
+func NewEventHandler(inputEvents *pubsub.PubSub, appState *state.SharedState) *EventHandler {
 	return &EventHandler{
 		inputEventBus: inputEvents,
+		appState:      appState,
 	}
 }
 
 // EventHandler is a http.Handler that servers the input events over http via wabsockets
 type EventHandler struct {
 	inputEventBus *pubsub.PubSub
+	appState      *state.SharedState
 }
 
 // ServeHTTP implements http.Handler
@@ -32,29 +34,12 @@ func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	isStreaming := false
-
 	for {
 		select {
 		case <-r.Context().Done():
 			return
 		case event := <-eventC:
-			if event.Source == events.System {
-				switch event.Code {
-				case events.StreamingStart:
-					if !isStreaming {
-						isStreaming = true
-						log.Println("Screen streaming started, pausing pen events")
-					}
-				case events.StreamingStop:
-					if isStreaming {
-						isStreaming = false
-						log.Println("Screen streaming stopped, resuming pen events")
-					}
-				}
-				continue
-			}
-			if isStreaming {
+			if h.appState.IsStreaming() {
 				continue
 			}
 			// Serialize the structure as JSON
@@ -67,7 +52,6 @@ func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// Send the event
 			fmt.Fprintf(w, "data: %d,%d\n\n", event.Code, event.Value)
 			w.(http.Flusher).Flush() // Ensure client receives the message immediately
-
 		}
 	}
 }

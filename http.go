@@ -12,6 +12,7 @@ import (
 	"github.com/owulveryck/goMarkableStream/internal/eventhttphandler"
 	"github.com/owulveryck/goMarkableStream/internal/pubsub"
 	"github.com/owulveryck/goMarkableStream/internal/remarkable"
+	"github.com/owulveryck/goMarkableStream/internal/state"
 	"github.com/owulveryck/goMarkableStream/internal/stream"
 )
 
@@ -25,11 +26,12 @@ func (s stripFS) Open(name string) (http.File, error) {
 
 func setMuxer(eventPublisher *pubsub.PubSub) *http.ServeMux {
 	mux := http.NewServeMux()
+	appState := state.NewSharedState()
 
 	// Custom handler to serve index.html for root path
 	mux.HandleFunc("/", newIndexHandler(stripFS{http.FS(assetsFS)}))
 
-	streamHandler := stream.NewStreamHandler(file, pointerAddr, eventPublisher, c.RLECompression)
+	streamHandler := stream.NewStreamHandler(file, pointerAddr, eventPublisher, c.RLECompression, appState)
 	if c.Compression {
 		mux.Handle("/stream", gzMiddleware(stream.ThrottlingMiddleware(streamHandler)))
 	} else if c.ZSTDCompression {
@@ -38,7 +40,7 @@ func setMuxer(eventPublisher *pubsub.PubSub) *http.ServeMux {
 		mux.Handle("/stream", stream.ThrottlingMiddleware(streamHandler))
 	}
 
-	wsHandler := eventhttphandler.NewEventHandler(eventPublisher)
+	wsHandler := eventhttphandler.NewEventHandler(eventPublisher, appState)
 	mux.Handle("/events", wsHandler)
 	gestureHandler := eventhttphandler.NewGestureHandler(eventPublisher)
 	mux.Handle("/gestures", gestureHandler)

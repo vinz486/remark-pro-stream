@@ -329,13 +329,6 @@ drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture);
 
 // Update texture
 function updateTexture(newRawData, shouldRotate, scaleFactor) {
-	// If the screen is updating, the laser pointer should be hidden.
-	if (cursorVisible) {
-		laserCursor.classList.remove('visible');
-		cursorVisible = false;
-		clearTimeout(cursorTimeout);
-	}
-
 	if (useBGRA) {
         convertBGRAtoRGBA(newRawData);
     };

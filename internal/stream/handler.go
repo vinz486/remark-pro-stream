@@ -12,6 +12,7 @@ import (
 	"github.com/owulveryck/goMarkableStream/internal/pubsub"
 	"github.com/owulveryck/goMarkableStream/internal/remarkable"
 	"github.com/owulveryck/goMarkableStream/internal/rle"
+	"github.com/owulveryck/goMarkableStream/internal/state"
 )
 
 var (
@@ -25,12 +26,13 @@ var rawFrameBuffer = sync.Pool{
 }
 
 // NewStreamHandler creates a new stream handler reading from file @pointerAddr
-func NewStreamHandler(file io.ReaderAt, pointerAddr int64, inputEvents *pubsub.PubSub, useRLE bool) *StreamHandler {
+func NewStreamHandler(file io.ReaderAt, pointerAddr int64, inputEvents *pubsub.PubSub, useRLE bool, appState *state.SharedState) *StreamHandler {
 	return &StreamHandler{
 		file:           file,
 		pointerAddr:    pointerAddr,
 		inputEventsBus: inputEvents,
 		useRLE:         useRLE,
+		appState:       appState,
 	}
 }
 
@@ -40,6 +42,7 @@ type StreamHandler struct {
 	pointerAddr    int64
 	inputEventsBus *pubsub.PubSub
 	useRLE         bool
+	appState       *state.SharedState
 }
 
 // ServeHTTP implements http.Handler
@@ -86,19 +89,23 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer rawFrameBuffer.Put(rawData) // Return the slice to the pool when done
 	// the informations are int4, therefore store it in a uint8array to reduce data transfer
 	rleWriter := rle.NewRLE(w)
-	writing := false  // Start with writing disabled - wait for first touch event
-	stopWriting := time.NewTicker(5 * time.Second)
+	writing := false // Start with writing disabled - wait for first touch event
+	stopWriting := time.NewTicker(3 * time.Second)
 	defer stopWriting.Stop()
-	
-	firstFrameSent := false
+
+	var once sync.Once
 	sessionStart := time.Now()
-	
+
 	log.Printf("[PERF] Starting with writing=false, waiting for first touch event")
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Transfer-Encoding", "chunked")
+
+	// semaphore to ensure only one fetchAndSend is running at a time
+	isSending := make(chan bool, 1)
+	isSending <- true
 
 	for {
 		select {
@@ -109,34 +116,32 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if !writing {
 					log.Printf("[PERF] First touch event received at T+%v - STARTING stream", time.Since(sessionStart))
 					writing = true
-					h.inputEventsBus.Publish(events.InputEventFromSource{
-						Source: events.System,
-						InputEvent: events.InputEvent{
-							Code: events.StreamingStart,
-						},
-					})
+					h.appState.SetStreaming(true)
 				}
-				stopWriting.Reset(5000 * time.Millisecond)
+				stopWriting.Reset(3000 * time.Millisecond)
 			}
 		case <-stopWriting.C:
 			writing = false
-			h.inputEventsBus.Publish(events.InputEventFromSource{
-				Source: events.System,
-				InputEvent: events.InputEvent{
-					Code: events.StreamingStop,
-				},
-			})
+			h.appState.SetStreaming(false)
 		case <-ticker.C:
 			if writing {
-				tickStart := time.Now()
-				if h.useRLE {
-					h.fetchAndSend(rleWriter, rawData)
-				} else {
-					h.fetchAndSend(w, rawData)
-				}
-				if !firstFrameSent {
-					log.Printf("[PERF] First frame sent at T+%v (fetch+send took %v)", time.Since(sessionStart), time.Since(tickStart))
-					firstFrameSent = true
+				select {
+				case <-isSending: // try to acquire the lock
+					go func() {
+						defer func() { isSending <- true }() // release the lock
+						tickStart := time.Now()
+						if h.useRLE {
+							h.fetchAndSend(rleWriter, rawData)
+						} else {
+							h.fetchAndSend(w, rawData)
+						}
+						once.Do(func() {
+							log.Printf("[PERF] First frame sent at T+%v (fetch+send took %v)", time.Since(sessionStart), time.Since(tickStart))
+						})
+					}()
+				default:
+					// previous send is still running, skip this frame
+					log.Println("[PERF] Skipping frame, previous one still sending.")
 				}
 			}
 		}
