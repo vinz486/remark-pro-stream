@@ -5,9 +5,9 @@ const rawCanvas = new OffscreenCanvas(screenWidth, screenHeight); // Define widt
 // Paper Pro: 1872x1404 (width > height) → naturally landscape
 const isNaturallyPortrait = screenHeight > screenWidth;
 
-// Get portrait mode from URL param, or default to false (landscape)
+// Get portrait mode from URL param, or default to true (landscape)
 let portrait = getQueryParam('portrait');
-portrait = portrait !== null ? portrait === 'true' : false;
+portrait = portrait !== null ? portrait === 'true' : true;
 
 // Flip is now enabled by default for all devices
 let flip = getBoolQueryParam('flip', true);

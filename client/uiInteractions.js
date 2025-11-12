@@ -56,6 +56,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Force initial canvas resize with correct orientation
     resizeVisibleCanvas();
+
+    // Notify the event worker about the initial orientation
+    eventWorker.postMessage({ type: 'portrait', portrait: portrait });
+
+    // Force refresh of texture rotation with the initial orientation
+    if (typeof refreshRotation === 'function') {
+        refreshRotation();
+    }
 });
 
 // Event listeners for dark mode toggle
