@@ -264,7 +264,7 @@ gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imageData);
 
 // Variables to track display state
 let isDarkMode = false;
-let contrastValue = 3.0; // Default contrast value set to maximum
+let contrastValue = 2.0; // Default contrast value set to maximum
 
 // Draw the scene
 function drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture) {
