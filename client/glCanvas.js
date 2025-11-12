@@ -42,8 +42,8 @@ uniform bool uDarkMode;
 uniform float uContrastLevel;
 
 // Constants for laser pointer visualization
-const float LASER_RADIUS = 6.0;
-const float LASER_EDGE_SOFTNESS = 2.0;
+const float LASER_RADIUS = 3.0;
+const float LASER_EDGE_SOFTNESS = 1.0;
 const vec3 LASER_COLOR = vec3(1.0, 0.0, 0.0);
 
 // Constants for image processing
@@ -74,9 +74,9 @@ void main(void) {
     }
     
     // Simple laser pointer - more reliable rendering
-    if (distance < 8.0 && uLaserX > 0.0 && uLaserY > 0.0) {
+    if (distance < 4.0 && uLaserX > 0.0 && uLaserY > 0.0) {
         // Create solid circle with slight fade at edge
-        float fade = 1.0 - smoothstep(6.0, 8.0, distance);
+        float fade = 1.0 - smoothstep(3.0, 4.0, distance);
         gl_FragColor = vec4(1.0, 0.0, 0.0, fade); // Red with fade at edge
     } else {
         gl_FragColor = texColor;
@@ -213,7 +213,7 @@ gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imageData);
 
 // Variables to track display state
 let isDarkMode = false;
-let contrastValue = 1.15; // Default contrast value
+let contrastValue = 3.0; // Default contrast value set to maximum
 
 // Draw the scene
 function drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture) {
@@ -295,6 +295,17 @@ function updateTexture(newRawData, shouldRotate, scaleFactor) {
 	drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture);
 }
 
+// Force refresh of rotation when orientation changes
+function refreshRotation() {
+	// Re-apply rotation matrix based on current portrait state
+	const uRotationMatrixLocation = gl.getUniformLocation(shaderProgram, 'uRotationMatrix');
+	const rotationMatrix = portrait ? makeRotationZMatrix(270) : makeRotationZMatrix(0);
+	gl.uniformMatrix4fv(uRotationMatrixLocation, false, rotationMatrix);
+	
+	// Redraw with new rotation
+	drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture);
+}
+
 function convertBGRAtoRGBA(data) {
     for (let i = 0; i < data.length; i += 4) {
         const b = data[i];     // Blue
@@ -322,21 +333,98 @@ function resizeGLCanvas(canvas) {
 	return false; // indicates no change in size
 }
 
-// Direct laser pointer position - no animation for more reliability
-function updateLaserPosition(x, y) {
-    // If x and y are valid positive values
-    if (x > 0 && y > 0) {
-        // Position is now directly proportional to canvas size
-        laserX = x * (gl.canvas.width / screenWidth);
-        laserY = gl.canvas.height - (y * (gl.canvas.height / screenHeight));
-    } else {
-        // Hide the pointer by moving it off-screen
-        laserX = -10;
-        laserY = -10;
+// Laser cursor HTML element
+const laserCursor = document.getElementById('laser-cursor');
+let cursorVisible = false;
+let cursorTimeout = null;
+let lastUpdateTime = 0;
+const UPDATE_INTERVAL = 33; // 30fps = ~33ms between updates
+
+// Debug tracking for min/max values
+let minRawX = Infinity, maxRawX = -Infinity;
+let minRawY = Infinity, maxRawY = -Infinity;
+let logCounter = 0;
+let filteredEvents = 0;
+
+// Update laser pointer position using HTML overlay (best practice)
+// Receives raw coordinates from reMarkable and scales them to actual canvas dimensions
+function updateLaserPosition(rawX, rawY, maxX, maxY) {
+    // Throttle to 30fps
+    const now = performance.now();
+    if (now - lastUpdateTime < UPDATE_INTERVAL) {
+        return; // Skip this update
+    }
+    lastUpdateTime = now;
+    
+    // Filter out invalid/negative coordinates - discard silently
+    if (rawX < 0 || rawY < 0) {
+        return;
     }
     
-    // Redraw immediately
-    drawScene(gl, programInfo, positionBuffer, textureCoordBuffer, texture);
+    // Track min/max values for debugging
+    if (rawX > 0) {
+        minRawX = Math.min(minRawX, rawX);
+        maxRawX = Math.max(maxRawX, rawX);
+    }
+    if (rawY > 0) {
+        minRawY = Math.min(minRawY, rawY);
+        maxRawY = Math.max(maxRawY, rawY);
+    }
+    
+    // Log every 60 events (approximately once per second)
+    logCounter++;
+    if (logCounter % 60 === 0) {
+        console.log(`[CURSOR DEBUG]
+  Raw Input: X=${rawX}, Y=${rawY}
+  Expected Max: X=${maxX}, Y=${maxY}
+  Observed Range: X=[${minRawX}, ${maxRawX}], Y=[${minRawY}, ${maxRawY}]
+  Mode: portrait=${portrait}, flip=${flip}
+  Canvas Size: ${gl.canvas.width}x${gl.canvas.height}`);
+    }
+    
+    // Calculate new position relative to canvas
+    let newX, newY;
+    if (portrait) {
+        // Portrait mode - vertical orientation
+        newX = (rawX / maxY) * gl.canvas.width;
+        newY = (rawY / maxX) * gl.canvas.height;
+        // Don't invert Y in portrait mode initially
+    } else {
+        // Landscape mode - horizontal orientation
+        newX = (rawY / maxX) * gl.canvas.width;
+        newY = (rawX / maxY) * gl.canvas.height;
+        // Invert Y to match canvas coordinate system in landscape
+        newY = gl.canvas.height - newY;
+    }
+    
+    // Apply flip transformation if active (180° rotation)
+    if (flip) {
+        newX = gl.canvas.width - newX;
+        newY = gl.canvas.height - newY;
+    }
+    
+    // Get canvas position on page (no offset - CSS transform handles centering)
+    const canvasRect = canvas.getBoundingClientRect();
+    const absoluteX = canvasRect.left + newX;
+    const absoluteY = canvasRect.top + newY;
+    
+    // Update cursor position directly (no CSS transition for smooth 30fps updates)
+    laserCursor.style.left = absoluteX + 'px';
+    laserCursor.style.top = absoluteY + 'px';
+    
+    // Show cursor if hidden
+    if (!cursorVisible) {
+        laserCursor.classList.add('visible');
+        cursorVisible = true;
+    }
+    
+    // Reset auto-hide timeout
+    clearTimeout(cursorTimeout);
+    cursorTimeout = setTimeout(() => {
+        console.log(`[LASER] Auto-hiding cursor after 1s of inactivity`);
+        laserCursor.classList.remove('visible');
+        cursorVisible = false;
+    }, 1000);
 }
 
 // Function to update dark mode state with transition effect

@@ -2,11 +2,10 @@
 function resizeVisibleCanvas() {
 	var container = document.getElementById("container");
 
-	if (portrait) {
-		var aspectRatio = screenHeight / screenWidth;
-	} else {
-		var aspectRatio = screenWidth / screenHeight;
-	}
+	// Always use landscape aspect ratio for this device
+	var aspectRatio = screenHeight / screenWidth;
+
+	console.log(`[RESIZE] portrait=${portrait}, screenW=${screenWidth}, screenH=${screenHeight}, aspectRatio=${aspectRatio}`);
 
 	var containerWidth = container.offsetWidth;
 	var containerHeight = container.offsetHeight;
@@ -28,6 +27,9 @@ function resizeVisibleCanvas() {
 		visibleCanvas.style.width = containerWidth + "px";
 		visibleCanvas.style.height = containerWidth / aspectRatio + "px";
 	}
+
+	console.log(`[RESIZE] Canvas size set to: ${visibleCanvas.style.width} x ${visibleCanvas.style.height}`);
+	console.log(`[RESIZE] Applying flip=${flip} → transform: rotate(${flip ? 180 : 0}deg)`);
 
 	if (flip) {
 		visibleCanvas.style.transform = "rotate(180deg)";

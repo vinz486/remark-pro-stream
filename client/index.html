@@ -27,8 +27,17 @@
 							<svg class="button-icon" viewBox="0 0 24 24" width="20" height="20">
 								<path fill="currentColor" d="M7.11,8.53L5.7,7.11C4.8,8.27 4.24,9.61 4.07,11h2.02c0.14-0.87 0.49-1.72 1.02-2.47zM6.09,13H4.07c0.17,1.39 0.72,2.73 1.62,3.89l1.41-1.42c-0.52-0.75-0.87-1.59-1.01-2.47zm1.01,5.32c1.16,0.9 2.51,1.44 3.9,1.61V17.9c-0.87-0.15-1.71-0.49-2.46-1.03L7.1,18.32zM13,4.07V1L8.45,5.55L13,10V6.09c2.84,0.48 5,2.94 5,5.91s-2.16,5.43-5,5.91v2.02c3.95-0.49 7-3.85 7-7.93S16.95,4.56 13,4.07z"/>
 							</svg>
-							<span>Rotate</span>
-							<div class="button-tooltip">Toggle orientation</div>
+							<span>Portrait</span>
+							<div class="button-tooltip">Toggle portrait mode</div>
+						</button>
+					</li>
+					<li>
+						<button id="flip" class="apple-button">
+							<svg class="button-icon" viewBox="0 0 24 24" width="20" height="20">
+								<path fill="currentColor" d="M15,21H9V3H15M11,5V19H13V5M17,7V17H15V7M9,7V17H7V7"/>
+							</svg>
+							<span>Flip</span>
+							<div class="button-tooltip">Flip 180°</div>
 						</button>
 					</li>
 					<li>
@@ -49,18 +58,6 @@
 							<div class="button-tooltip">Toggle drawing layers</div>
 						</button>
 					</li>
-					<li>
-						<div class="slider-container">
-							<label for="contrastSlider" class="slider-label">
-								<svg class="button-icon" viewBox="0 0 24 24" width="20" height="20">
-									<path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18V6Z"/>
-								</svg>
-								<span>Contrast</span>
-							</label>
-							<input type="range" min="1.0" max="3.0" step="0.1" value="1.15" class="contrast-slider" id="contrastSlider">
-							<div class="button-tooltip">Adjust contrast level</div>
-						</div>
-					</li>
 				</ul>
 				<div class="theme-switch-wrapper">
 					<label class="theme-switch" for="checkbox">
@@ -76,6 +73,7 @@
 		</div>
 		<div id="container">
 			<canvas id="canvas"></canvas>
+			<div id="laser-cursor"></div>
 			<div id="message"></div>
 			<iframe id="content" allow="camera *;" allowfullscreen="true" frameborder="0" width="100%" height="100%" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
 		</div>

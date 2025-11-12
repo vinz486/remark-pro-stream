@@ -33,10 +33,14 @@ async function initiateStream() {
 	const RETRY_DELAY_MS = 3000; // Delay before retrying the connection (in milliseconds)
 
 	try {
+		const streamStartTime = performance.now();
+		console.log(`[PERF Worker] Initiating stream fetch at T+0ms`);
 
 		// Create a new ReadableStream instance from a fetch request
 		const response = await fetch('/stream?rate='+rate);
 		const stream = response.body;
+		
+		console.log(`[PERF Worker] Stream response received at T+${(performance.now() - streamStartTime).toFixed(2)}ms`);
 
 		// Create a reader for the ReadableStream
 		const reader = stream.getReader();
@@ -46,6 +50,9 @@ async function initiateStream() {
 
 		var offset = 0;
 		var count = 0;
+		let firstChunkReceived = false;
+		let firstFrameComplete = false;
+		const sessionStart = performance.now();
 
 		// Define a function to process the chunks of data as they arrive
 		const processData = async ({ done, value }) => {
@@ -58,7 +65,13 @@ async function initiateStream() {
 					return;
 				}
 
+				if (!firstChunkReceived) {
+					console.log(`[PERF Worker] First data chunk received at T+${(performance.now() - sessionStart).toFixed(2)}ms, size: ${value.length} bytes`);
+					firstChunkReceived = true;
+				}
+
                 const uint8Array = new Uint8Array(value);
+				const decodeStart = performance.now();
 
 				// Process the received data chunk and render if needed.
                 if (useRLE) {
@@ -66,6 +79,14 @@ async function initiateStream() {
                 } else {
                     offset = decodeRaw(imageData, uint8Array, offset, pixelDataSize);
                 }
+				
+				const decodeDuration = performance.now() - decodeStart;
+				
+				// Log decode time for first chunk
+				if (!firstFrameComplete && offset >= pixelDataSize) {
+					console.log(`[PERF Worker] First frame decoded at T+${(performance.now() - sessionStart).toFixed(2)}ms (decode took ${decodeDuration.toFixed(2)}ms)`);
+					firstFrameComplete = true;
+				}
 
 				// Read the next chunk
 				const nextChunk = await reader.read();

@@ -1,13 +1,16 @@
 const rawCanvas = new OffscreenCanvas(screenWidth, screenHeight); // Define width and height as needed
+
+// Auto-detect natural orientation based on screen dimensions
+// If height > width, the device is naturally portrait
+// Paper Pro: 1872x1404 (width > height) → naturally landscape
+const isNaturallyPortrait = screenHeight > screenWidth;
+
+// Get portrait mode from URL param, or default to false (landscape)
 let portrait = getQueryParam('portrait');
 portrait = portrait !== null ? portrait === 'true' : false;
 
-defaultFlip = false;
-// If this is the Paper Pro, we don't need to flip the image.
-if (DeviceModel === 'RemarkablePaperPro') {
-	defaultFlip = false;
-}
-let flip = getBoolQueryParam('flip', defaultFlip);
+// Flip is now enabled by default for all devices
+let flip = getBoolQueryParam('flip', true);
 
 let withColor = getQueryParam('color', 'true');
 withColor = withColor !== null ? withColor === 'true' : true;

@@ -36,20 +36,52 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!colorsButton.classList.contains('toggled')) {
         colorsButton.classList.add('toggled');
     }
+    
+    // Initialize flip button as toggled (flip is on by default)
+    const flipButton = document.getElementById('flip');
+    if (flip && !flipButton.classList.contains('toggled')) {
+        flipButton.classList.add('toggled');
+    }
+    
+    // Initialize landscape button as toggled (landscape is on by default)
+    const landscapeButton = document.getElementById('rotate');
+    if (!portrait && !landscapeButton.classList.contains('toggled')) {
+        landscapeButton.classList.add('toggled');
+    }
+    
+    // Force initial canvas resize with correct orientation
+    resizeVisibleCanvas();
 });
 
 // Event listeners for dark mode toggle
 document.getElementById('checkbox').addEventListener('change', toggleDarkMode);
 
-// Rotate button functionality
+// Rotate button functionality - toggle orientation only
 document.getElementById('rotate').addEventListener('click', function () {
     portrait = !portrait;
     this.classList.toggle('toggled');
+    
+    // Notify the event worker about orientation change
     eventWorker.postMessage({ type: 'portrait', portrait: portrait });
     resizeVisibleCanvas();
     
+    // Force refresh of texture rotation with new orientation
+    if (typeof refreshRotation === 'function') {
+        refreshRotation();
+    }
+    
     // Show confirmation message
-    showMessage(`Display ${portrait ? 'portrait' : 'landscape'} mode activated`, 2000);
+    showMessage(`Portrait ${portrait ? 'ON' : 'OFF'}`, 2000);
+});
+
+// Flip button functionality - toggle 180° rotation independently
+document.getElementById('flip').addEventListener('click', function () {
+    flip = !flip;
+    this.classList.toggle('toggled');
+    resizeVisibleCanvas();
+    
+    // Show confirmation message
+    showMessage(`Flip ${flip ? 'ON' : 'OFF'}`, 2000);
 });
 
 // Colors button functionality
@@ -73,7 +105,6 @@ sidebar.addEventListener('mouseout', function () {
 
 // Resize the canvas whenever the window is resized
 window.addEventListener("resize", resizeVisibleCanvas);
-resizeVisibleCanvas();
 
 // Mask drawing button functionality
 document.getElementById('switchOrderButton').addEventListener('click', function () {
@@ -90,39 +121,3 @@ document.getElementById('switchOrderButton').addEventListener('click', function 
         showMessage('Content layer on top', 2000);
     }
 });
-
-// Contrast slider functionality
-document.getElementById('contrastSlider').addEventListener('input', function() {
-    // Get the slider value (between 1.0 and 3.0)
-    const contrastLevel = this.value;
-    
-    // Update renderer if function exists
-    if (typeof setContrast === 'function') {
-        setContrast(contrastLevel);
-    }
-    
-    // Show feedback when user stops moving the slider
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout(() => {
-        showMessage(`Contrast: ${parseFloat(contrastLevel).toFixed(1)}`, 1000);
-    }, 500);
-});
-
-// Load saved contrast value on initialization
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for saved contrast preference
-    const savedContrast = localStorage.getItem('contrastLevel');
-    const contrastSlider = document.getElementById('contrastSlider');
-    
-    if (savedContrast) {
-        // Set the slider to the saved value
-        contrastSlider.value = savedContrast;
-        
-        // Update the contrast setting
-        if (typeof setContrast === 'function') {
-            setContrast(savedContrast);
-        }
-    }
-});
-
-

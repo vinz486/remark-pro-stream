@@ -8,6 +8,8 @@ streamWorker.postMessage({
 	useRLE: UseRLE,
 });
 
+let firstFrameRendered = false;
+const mainThreadStart = performance.now();
 
 // Listen for updates from the worker
 streamWorker.onmessage = (event) => {
@@ -19,8 +21,20 @@ streamWorker.onmessage = (event) => {
 	switch (data.type) {
 		case 'update':
 			// Handle the update
-			const data = event.data.data;
-			updateTexture(data, portrait, 1);
+			if (!firstFrameRendered) {
+				console.log(`[PERF Main] First frame data received from worker at T+${(performance.now() - mainThreadStart).toFixed(2)}ms`);
+			}
+			
+			const frameData = event.data.data;
+			const renderStart = performance.now();
+			// portrait=true → rotate 270°, portrait=false → no rotation
+			updateTexture(frameData, portrait, 1);
+			const renderDuration = performance.now() - renderStart;
+			
+			if (!firstFrameRendered) {
+				console.log(`[PERF Main] First frame rendered at T+${(performance.now() - mainThreadStart).toFixed(2)}ms (render took ${renderDuration.toFixed(2)}ms)`);
+				firstFrameRendered = true;
+			}
 			break;
 		case 'error':
 			console.error('Error from worker:', event.data.message);
@@ -84,18 +98,8 @@ gestureWorker.onmessage = (event) => {
 
 }
 
-let messageTimeout;
-
-function clearLaser() {
-	// Function to call when no message is received for 300 ms
-	updateLaserPosition(-10,-10);
-}
 // Listen for updates from the worker
 eventWorker.onmessage = (event) => {
-	// Reset the timer every time a message is received
-	clearTimeout(messageTimeout);
-	messageTimeout = setTimeout(clearLaser, 300);
-
 	// To hide the message (e.g., when you start drawing in WebGL again)
 	messageDiv.style.display = 'none';
 
@@ -103,20 +107,17 @@ eventWorker.onmessage = (event) => {
 
 	switch (data.type) {
 		case 'clear':
-			updateLaserPosition(-10,-10);
-			//clearLaser();
+			// Clear button pressed - hide cursor
+			updateLaserPosition(-10, -10);
 			break;
 		case 'update':
-			// Handle the update
-			const X = event.data.X;
-			const Y = event.data.Y;
-			updateLaserPosition(X,Y);
+			// Handle the update - receive raw coordinates and max values from worker
+			// HTML overlay with CSS transitions handles smoothing automatically
+			updateLaserPosition(data.rawX, data.rawY, data.maxX, data.maxY);
 			break;
 		case 'error':
 			console.error('Error from worker:', event.data.message);
 			waiting(event.data.message)
-			// Handle the error, maybe show a user-friendly message or take some corrective action
 			break;
-			// ... handle other message types as needed
 	}
 };

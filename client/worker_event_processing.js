@@ -50,22 +50,29 @@ async function initiateEventsListener() {
 		}
 		if (message.Type === 3) {
 			// Code 3: Update and draw laser pointer
+			// Send RAW coordinates to main thread - scaling will happen there with correct canvas dimensions
 			if (portrait) {
 				if (message.Code === 1) { // Horizontal position
-					latestX = scaleValue(message.Value, maxXValue, width);
+					latestX = message.Value;
 				} else if (message.Code === 0) { // Vertical position
-					latestY = height - scaleValue(message.Value, maxYValue, height);
+					latestY = message.Value;
 				}
 			} else {
-				// wrong
+				// Landscape mode
 				if (message.Code === 1) { // Horizontal position
-					latestY = scaleValue(message.Value, maxYValue, height);
+					latestX = message.Value;
 				} else if (message.Code === 0) { // Vertical position
-					latestX = scaleValue(message.Value, maxXValue, width);
+					latestY = message.Value;
 				}
 			}
 			if (draw) {
-				postMessage({ type: 'update', X: latestX, Y: latestY });
+				postMessage({ 
+					type: 'update', 
+					rawX: latestX, 
+					rawY: latestY,
+					maxX: maxXValue,
+					maxY: maxYValue
+				});
 			}
 		}
 	}
