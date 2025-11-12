@@ -41,6 +41,13 @@ const (
 	Pen int = 1
 	// Touch event
 	Touch int = 2
+	// System event
+	System int = 3
+)
+
+const (
+	StreamingStart uint16 = 1
+	StreamingStop  uint16 = 2
 )
 
 // InputEvent from the reMarkable

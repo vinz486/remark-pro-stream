@@ -87,7 +87,7 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// the informations are int4, therefore store it in a uint8array to reduce data transfer
 	rleWriter := rle.NewRLE(w)
 	writing := false  // Start with writing disabled - wait for first touch event
-	stopWriting := time.NewTicker(2 * time.Second)
+	stopWriting := time.NewTicker(5 * time.Second)
 	defer stopWriting.Stop()
 	
 	firstFrameSent := false
@@ -109,11 +109,23 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if !writing {
 					log.Printf("[PERF] First touch event received at T+%v - STARTING stream", time.Since(sessionStart))
 					writing = true
+					h.inputEventsBus.Publish(events.InputEventFromSource{
+						Source: events.System,
+						InputEvent: events.InputEvent{
+							Code: events.StreamingStart,
+						},
+					})
 				}
-				stopWriting.Reset(2000 * time.Millisecond)
+				stopWriting.Reset(5000 * time.Millisecond)
 			}
 		case <-stopWriting.C:
 			writing = false
+			h.inputEventsBus.Publish(events.InputEventFromSource{
+				Source: events.System,
+				InputEvent: events.InputEvent{
+					Code: events.StreamingStop,
+				},
+			})
 		case <-ticker.C:
 			if writing {
 				tickStart := time.Now()

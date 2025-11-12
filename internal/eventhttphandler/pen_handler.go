@@ -2,6 +2,7 @@ package eventhttphandler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/owulveryck/goMarkableStream/internal/events"
@@ -31,11 +32,31 @@ func (h *EventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
+	isStreaming := false
+
 	for {
 		select {
 		case <-r.Context().Done():
 			return
 		case event := <-eventC:
+			if event.Source == events.System {
+				switch event.Code {
+				case events.StreamingStart:
+					if !isStreaming {
+						isStreaming = true
+						log.Println("Screen streaming started, pausing pen events")
+					}
+				case events.StreamingStop:
+					if isStreaming {
+						isStreaming = false
+						log.Println("Screen streaming stopped, resuming pen events")
+					}
+				}
+				continue
+			}
+			if isStreaming {
+				continue
+			}
 			// Serialize the structure as JSON
 			if event.Source != events.Pen {
 				continue
